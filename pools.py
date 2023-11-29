@@ -15,7 +15,9 @@ coins = {
   "LINK" : '0x514910771AF9Ca656af840dff83E8264EcF986CA'
 }
 
-
+# Fee tiers
+# 1%, 0.3%, 0.05%, and 0.01%
+fee_tiers = [10000, 3000, 500, 100]
 
 # function to get pool address
 def calculate_pool_address(factory = factoryAddress, token_0 = coins["WETH"], token_1 = coins["WBTC"], fee = 3000):
@@ -26,19 +28,28 @@ def calculate_pool_address(factory = factoryAddress, token_0 = coins["WETH"], to
     resPair = Web3.solidity_keccak(['bytes','bytes'], ['0xff' + abiEncoded_2.hex(), POOL_INIT_CODE_HASH])[12:]
     return(resPair.hex())
 
-# Calculate all unique combinations of two coins
-coin_pairs = combinations(coins.values(), 2)
+# Calculate all unique combinations of two coin tickers
+coin_pairs = combinations(coins.keys(), 2)
 
-# Calculate the pool address for each pair and store them in an array
-pool_addresses = [
-    calculate_pool_address(
-        factory=factoryAddress,
-        token_0=pair[0],
-        token_1=pair[1],
-        fee=3000
-    )
-    for pair in coin_pairs
-]
+# Calculate the pool address for each pair and each fee tier
+pool_addresses = []
+for pair in coin_pairs:
+    for fee in fee_tiers:
+        # Look up the addresses for each ticker
+        token_0_address = coins[pair[0]]
+        token_1_address = coins[pair[1]]
+        
+        # Calculate the pool address using the addresses
+        pool_address = calculate_pool_address(
+            factory=factoryAddress,
+            token_0=token_0_address,
+            token_1=token_1_address,
+            fee=fee
+        )
+        
+        # Append the tickers, addresses, fee, and pool address to the list
+        pool_addresses.append(((pair[0], token_0_address), (pair[1], token_1_address), fee, pool_address))
 
-# Print the array of pool addresses
-print(pool_addresses)
+# Print the array of ((ticker_0, address_0), (ticker_1, address_1), fee, pool address) tuples
+for item in pool_addresses:
+    print(f"Pair: {item[0][0]}-{item[1][0]} ({item[0][1]}, {item[1][1]}), Fee: {item[2]}, Pool Address: {item[3]}")

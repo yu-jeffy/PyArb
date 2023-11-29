@@ -26,7 +26,7 @@ def calculate_pool_address(factory = factoryAddress, token_0 = coins["WETH"], to
     salt = Web3.solidity_keccak(['bytes'], ['0x' +abiEncoded_1.hex()])
     abiEncoded_2 = encode_packed([ 'address', 'bytes32'], ( factory, salt))
     resPair = Web3.solidity_keccak(['bytes','bytes'], ['0xff' + abiEncoded_2.hex(), POOL_INIT_CODE_HASH])[12:]
-    return(resPair.hex())
+    return(Web3.to_checksum_address(resPair.hex()))
 
 # Calculate all unique combinations of two coin tickers
 coin_pairs = combinations(coins.keys(), 2)

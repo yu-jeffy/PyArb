@@ -49,62 +49,38 @@ def get_token_decimals(token_address):
     return token_contract.functions.decimals().call()
 
 # find arbitrage between two pools
-def find_simple_arbitrage_opportunities(pool_data):
-    prices = {}
-    pool_addresses = {}
-
-    for pool in pool_data:
-        token0, token1, _, pool_address, _, sqrt_price_x96, _, _, _, _, _ = pool
-        price = calculate_price_from_sqrt_price(sqrt_price_x96)
-        token_pair = (token0[0], token1[0])
-        
-        if token_pair not in prices:
-            prices[token_pair] = []
-            pool_addresses[token_pair] = []
-        prices[token_pair].append(price)
-        pool_addresses[token_pair].append(pool_address)
-    
-    # Compare prices for simple arbitrage
-    for token_pair, price_list in prices.items():
-        if len(price_list) > 1 and max(price_list) != min(price_list):
-            max_price = max(price_list)
-            min_price = min(price_list)
-            price_difference = max_price - min_price
-            percentage_difference = (price_difference / min_price) * 100
-
-            max_price_pool = pool_addresses[token_pair][price_list.index(max_price)]
-            min_price_pool = pool_addresses[token_pair][price_list.index(min_price)]
-
-            print(f"Arbitrage opportunity for {token_pair}: "
-                  f"Buy at {min_price_pool} (Price: {min_price}), "
-                  f"Sell at {max_price_pool} (Price: {max_price}). "
-                  f"Price difference: {price_difference} ({percentage_difference:.2f}%)")
-
-find_simple_arbitrage_opportunities(pool_data)
-
-# find triangle arbitrage between
 def find_triangle_arbitrage_opportunities(pool_data):
     # Create a graph where nodes are tokens and edges are pools with their respective prices
     graph = {}
+    token_decimals = {}  # Cache for token decimals
+
+    # Fetch and cache the decimals for each token
+    for pool in pool_data:
+        _, _, _, _, _, _, token0_address, token1_address, _, _, _ = pool
+        if token0_address not in token_decimals:
+            token_decimals[token0_address] = get_token_decimals(token0_address)
+        if token1_address not in token_decimals:
+            token_decimals[token1_address] = get_token_decimals(token1_address)
+
+    # Build the graph with correct prices
     for pool in pool_data:
         token0, token1, _, _, _, sqrt_price_x96, token0_address, token1_address, _, _, _ = pool
-        token0_decimals = get_token_decimals(token0_address)
-        token1_decimals = get_token_decimals(token1_address)
-        price = calculate_price_with_decimals(sqrt_price_x96, token0_decimals, token1_decimals)
         token0_ticker, _ = token0
         token1_ticker, _ = token1
-        
+        token0_decimals = token_decimals[token0_address]
+        token1_decimals = token_decimals[token1_address]
+        price = calculate_price_with_decimals(sqrt_price_x96, token0_decimals, token1_decimals)
+
         if token0_ticker not in graph:
             graph[token0_ticker] = {}
         if token1_ticker not in graph:
             graph[token1_ticker] = {}
-        
-        # Add both directions to the graph with their respective prices
+
         # The price from token0 to token1
         graph[token0_ticker][token1_ticker] = {'price': price, 'pool': pool}
         # The price from token1 to token0 (inverse)
         graph[token1_ticker][token0_ticker] = {'price': 1 / price, 'pool': pool}
-    
+
     # Find cycles of length 3 (triangle arbitrage)
     for start_token in graph:
         for second_token in graph[start_token]:
@@ -117,12 +93,11 @@ def find_triangle_arbitrage_opportunities(pool_data):
                         graph[third_token][start_token]['price']
                     )
                     # If the product of rates is close to 1, there might be an arbitrage opportunity
-                    if rate_product > 1:  # Using a threshold to account for fees and slippage
+                    if 1 < rate_product < 1.01:  # Using a threshold to account for fees and slippage
                         print(f"Triangle arbitrage opportunity: {start_token} -> {second_token} -> {third_token} -> {start_token}")
                         print(f"Rates: {graph[start_token][second_token]['price']}, {graph[second_token][third_token]['price']}, {graph[third_token][start_token]['price']}")
                         print(f"Product of rates: {rate_product}")
                         print(f"Pool Addresses: {graph[start_token][second_token]['pool'][3]}, {graph[second_token][third_token]['pool'][3]}, {graph[third_token][start_token]['pool'][3]}")
                         print("-" * 40)
 
-# Call the function to find triangle arbitrage opportunities
 find_triangle_arbitrage_opportunities(pool_data)

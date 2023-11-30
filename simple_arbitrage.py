@@ -33,24 +33,42 @@ def calculate_price_with_decimals(sqrt_price_x96, token0_decimals, token1_decima
     price_adjusted = price * (10 ** token0_decimals) / (10 ** token1_decimals)
     return price_adjusted
 
-# get how many decimals a coin has for accurate price calculation
-def get_token_decimals(token_address):
-    # ERC-20 token standard 'decimals' function ABI
-    decimals_abi = {
-        "constant": True,
-        "inputs": [],
-        "name": "decimals",
-        "outputs": [{"name": "", "type": "uint8"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function",
-    }
-    token_contract = web3.eth.contract(address=Web3.to_checksum_address(token_address), abi=[decimals_abi])
-    decimals = token_contract.functions.decimals().call()
-    print(f"Token at address {token_address} has {decimals} decimals")  # Debugging output
-    return decimals
 
-# find arbitrage between two pools
+
+def find_simple_arbitrage_opportunities(pool_data):
+    prices = {}
+    pool_addresses = {}
+
+    for pool in pool_data:
+        token0, token1, _, pool_address, _, sqrt_price_x96, _, _, _, _, _ = pool
+        price = calculate_price_from_sqrt_price(sqrt_price_x96)
+        token_pair = (token0[0], token1[0])
+        
+        if token_pair not in prices:
+            prices[token_pair] = []
+            pool_addresses[token_pair] = []
+        prices[token_pair].append(price)
+        pool_addresses[token_pair].append(pool_address)
+    
+    # Compare prices for simple arbitrage
+    for token_pair, price_list in prices.items():
+        if len(price_list) > 1 and max(price_list) != min(price_list):
+            max_price = max(price_list)
+            min_price = min(price_list)
+            price_difference = max_price - min_price
+            percentage_difference = (price_difference / min_price) * 100
+
+            max_price_pool = pool_addresses[token_pair][price_list.index(max_price)]
+            min_price_pool = pool_addresses[token_pair][price_list.index(min_price)]
+
+            print(f"Arbitrage opportunity for {token_pair}: "
+                  f"Buy at {min_price_pool} (Price: {min_price}), "
+                  f"Sell at {max_price_pool} (Price: {max_price}). "
+                  f"Price difference: {price_difference} ({percentage_difference:.2f}%)")
+
+find_simple_arbitrage_opportunities(pool_data)
+
+# find triangle arbitrage
 def find_triangle_arbitrage_opportunities(pool_data):
     # Create a graph where nodes are tokens and edges are pools with their respective prices
     graph = {}

@@ -2,18 +2,11 @@ from web3 import Web3
 from eth_abi import encode
 from eth_abi.packed import encode_packed
 from itertools import combinations
+from coins import coins
 
 # Uniswap V3 factory address
 # https://docs.uniswap.org/contracts/v3/reference/deployments
 factoryAddress = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
-
-# coin dictionary, ticker : contract address
-coins = {
-  "WETH": '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  "WBTC": '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
-  "MKR" : '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',
-  "LINK" : '0x514910771AF9Ca656af840dff83E8264EcF986CA'
-}
 
 # Fee tiers
 # 1%, 0.3%, 0.05%, and 0.01%

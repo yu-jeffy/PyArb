@@ -1,6 +1,7 @@
 from web3 import Web3
 from dotenv import load_dotenv
 import os
+from coins import coins
 
 # Load environment variables from .env file
 load_dotenv()
@@ -28,16 +29,13 @@ def get_token_decimals(token_address):
     print(f"Token at address {token_address} has {decimals} decimals")  # Debugging output
     return decimals
 
+# Dictionary to store coin addresses and their decimals
+coins_decimals = {}
 
+# Iterate over the coins dictionary and fetch decimals for each coin
+for coin, address in coins.items():
+    decimals = get_token_decimals(address)
+    coins_decimals[address] = decimals
+    # print(f"{coin} ({address}) has {decimals} decimals")
 
-# Example token addresses
-token_addresses = [
-    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",  # WETH
-    "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",  # WBTC
-    "0x514910771AF9Ca656af840dff83E8264EcF986CA",  # LINK
-    # ... add other token addresses
-]
-
-# Fetch and print the decimals for each token
-for address in token_addresses:
-    get_token_decimals(address)
+# print(coins_decimals)

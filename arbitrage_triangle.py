@@ -18,8 +18,10 @@ if web3.is_connected():
 # some ERC-20s have different decimals, so this calculates dynamically
 # uses decimals from decimals.py
 def calculate_price_with_decimals(sqrt_price_x96, token0_address, token1_address):
+    # Fetch the decimals for each token
     token0_decimals = coins_decimals[token0_address]
     token1_decimals = coins_decimals[token1_address]
+    # Convert sqrtPriceX96 to actual price
     price = (sqrt_price_x96 / (1 << 96)) ** 2
     # Adjust for token decimals
     price_adjusted = price * (10 ** token0_decimals) / (10 ** token1_decimals)
@@ -42,15 +44,10 @@ def find_triangle_arbitrage_opportunities(pool_data):
         # Debug: Print the price and decimals for each pool
         print(f"Pool: {token0_ticker}-{token1_ticker}, Price: {price}, Decimals: {coins_decimals[token0_address]}, {coins_decimals[token1_address]}")
 
-        if token0_ticker not in graph:
-            graph[token0_ticker] = {}
-        if token1_ticker not in graph:
-            graph[token1_ticker] = {}
-
-        # The price from token0 to token1
-        graph[token0_ticker][token1_ticker] = {'price': price, 'pool': pool}
-        # The price from token1 to token0 (inverse price)
-        graph[token1_ticker][token0_ticker] = {'price': 1 / price, 'pool': pool}
+        # Add the price to the graph in the correct direction
+        graph.setdefault(token0_ticker, {})[token1_ticker] = {'price': price, 'pool': pool}
+        # Add the inverse price to the graph in the correct direction
+        graph.setdefault(token1_ticker, {})[token0_ticker] = {'price': 1 / price, 'pool': pool}
 
     # Find cycles of length 3 (triangle arbitrage)
     for start_token in graph:

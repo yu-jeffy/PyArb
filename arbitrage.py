@@ -18,11 +18,15 @@ if web3.is_connected():
 with open('uniswap_pool_abi.json', 'r') as abi_file:
     pool_abi = json.load(abi_file)
 
-def calculate_price_from_sqrt_price(sqrt_price_x96):
+# price is in sqrtPriceX96 from the pool smart contract, function to convert
+def calculate_price_from_sqrt_price(sqrt_price_x96, token0_decimals, token1_decimals):
     # Convert sqrtPriceX96 to actual price
     price = (sqrt_price_x96 / (1 << 96)) ** 2
+    # Adjust for token decimals
+    price = price * (10 ** token0_decimals) / (10 ** token1_decimals)
     return price
 
+# find arbitrage between two pools
 def find_simple_arbitrage_opportunities(pool_data):
     prices = {}
     pool_addresses = {}
@@ -55,3 +59,42 @@ def find_simple_arbitrage_opportunities(pool_data):
                   f"Price difference: {price_difference} ({percentage_difference:.2f}%)")
 
 find_simple_arbitrage_opportunities(pool_data)
+
+# find triangle arbitrage 
+def find_triangle_arbitrage_opportunities(pool_data):
+    # Create a graph where nodes are tokens and edges are pools with their respective prices
+    graph = {}
+    for pool in pool_data:
+        token0, token1, _, _, _, sqrt_price_x96, _, _, _, _, _ = pool
+        price = calculate_price_from_sqrt_price(sqrt_price_x96)
+        token0_ticker, token0_address = token0
+        token1_ticker, token1_address = token1
+        
+        if token0_ticker not in graph:
+            graph[token0_ticker] = {}
+        if token1_ticker not in graph:
+            graph[token1_ticker] = {}
+        
+        # Add both directions to the graph with their respective prices
+        graph[token0_ticker][token1_ticker] = {'price': 1 / price, 'pool': pool}
+        graph[token1_ticker][token0_ticker] = {'price': price, 'pool': pool}
+    
+    # Find cycles of length 3 (triangle arbitrage)
+    for start_token in graph:
+        for second_token in graph[start_token]:
+            for third_token in graph[second_token]:
+                if third_token in graph and start_token in graph[third_token]:
+                    # Calculate the product of the exchange rates
+                    rate_product = (
+                        graph[start_token][second_token]['price'] *
+                        graph[second_token][third_token]['price'] *
+                        graph[third_token][start_token]['price']
+                    )
+                    # If the product of rates is greater than 1, there is an arbitrage opportunity
+                    if rate_product > 1:
+                        print(f"Triangle arbitrage opportunity: {start_token} -> {second_token} -> {third_token} -> {start_token}")
+                        print(f"Rates: {graph[start_token][second_token]['price']}, {graph[second_token][third_token]['price']}, {graph[third_token][start_token]['price']}")
+                        print(f"Product of rates: {rate_product}")
+                        print("-" * 40)
+
+find_triangle_arbitrage_opportunities(pool_data)

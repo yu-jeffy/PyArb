@@ -44,5 +44,5 @@ for pair in coin_pairs:
         pool_addresses.append(((pair[0], token_0_address), (pair[1], token_1_address), fee, pool_address))
 
 # Print the array of ((ticker_0, address_0), (ticker_1, address_1), fee, pool address) tuples
-for item in pool_addresses:
-    print(f"Pair: {item[0][0]}-{item[1][0]} ({item[0][1]}, {item[1][1]}), Fee: {item[2]}, Pool Address: {item[3]}")
+# for item in pool_addresses:
+    # print(f"Pair: {item[0][0]}-{item[1][0]} ({item[0][1]}, {item[1][1]}), Fee: {item[2]}, Pool Address: {item[3]}")

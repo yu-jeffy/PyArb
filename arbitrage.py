@@ -30,7 +30,7 @@ def calculate_price_with_decimals(sqrt_price_x96, token0_decimals, token1_decima
     # Convert sqrtPriceX96 to actual price
     price = (sqrt_price_x96 / (1 << 96)) ** 2
     # Adjust for token decimals
-    price_adjusted = price * (10 ** token1_decimals) / (10 ** token0_decimals)
+    price_adjusted = price * (10 ** token0_decimals) / (10 ** token1_decimals)
     return price_adjusted
 
 # get how many decimals a coin has for accurate price calculation
@@ -71,10 +71,13 @@ def find_triangle_arbitrage_opportunities(pool_data):
         token1_ticker, _ = token1
         token0_decimals = token_decimals[token0_address]
         token1_decimals = token_decimals[token1_address]
+
+        # Ensure the correct order of decimals is used for the price calculation
         price = calculate_price_with_decimals(sqrt_price_x96, token0_decimals, token1_decimals)
 
         # Debug: Print the price and decimals for each pool
         print(f"Pool: {token0_ticker}-{token1_ticker}, Price: {price}, Decimals: {token0_decimals}, {token1_decimals}")
+
 
         if token0_ticker not in graph:
             graph[token0_ticker] = {}

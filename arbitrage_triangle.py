@@ -101,5 +101,5 @@ def find_triangle_arbitrage_opportunities(graph):
 
 # READY, AIM, FIRE! 🏴‍☠️
 arbitrage_graph = build_arbitrage_graph(pool_data)
-# print(arbitrage_graph)
+print(arbitrage_graph)
 find_triangle_arbitrage_opportunities(arbitrage_graph)

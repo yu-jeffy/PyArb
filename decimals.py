@@ -26,7 +26,7 @@ def get_token_decimals(token_address):
     }
     token_contract = web3.eth.contract(address=Web3.to_checksum_address(token_address), abi=[decimals_abi])
     decimals = token_contract.functions.decimals().call()
-    print(f"Token at address {token_address} has {decimals} decimals")  # Debugging output
+    # print(f"Token at address {token_address} has {decimals} decimals")  # Debugging output
     return decimals
 
 # Dictionary to store coin addresses and their decimals

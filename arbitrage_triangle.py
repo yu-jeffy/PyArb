@@ -27,48 +27,79 @@ def calculate_price_with_decimals(sqrt_price_x96, token0_address, token1_address
     price_adjusted = price * (10 ** token0_decimals) / (10 ** token1_decimals)
     return price_adjusted
 
-# find triangle arbitrage
-def find_triangle_arbitrage_opportunities(pool_data):
-    # Create a graph where nodes are tokens and edges are pools with their respective prices
-    graph = {}
 
-    # Build the graph with correct prices
+# build graph of coins and pools
+def build_arbitrage_graph(pool_data):
+    graph = {}
     for pool in pool_data:
         token0, token1, _, _, _, sqrt_price_x96, token0_address, token1_address, _, _, _ = pool
         token0_ticker, _ = token0
         token1_ticker, _ = token1
 
-        # Ensure the correct order of decimals is used for the price calculation
-        price = calculate_price_with_decimals(sqrt_price_x96, token0_address, token1_address)
+        # Calculate the price from token0 to token1
+        price_token0_to_token1 = calculate_price_with_decimals(sqrt_price_x96, token0_address, token1_address)
+        # Calculate the price from token1 to token0 (inverse price)
+        price_token1_to_token0 = 1 / price_token0_to_token1
 
-        # Debug: Print the price and decimals for each pool
-        print(f"Pool: {token0_ticker}-{token1_ticker}, Price: {price}, Decimals: {coins_decimals[token0_address]}, {coins_decimals[token1_address]}")
+        # Add the prices to the graph
+        if token0_ticker not in graph:
+            graph[token0_ticker] = {}
+        if token1_ticker not in graph:
+            graph[token1_ticker] = {}
 
-        # Add the price to the graph in the correct direction
-        graph.setdefault(token0_ticker, {})[token1_ticker] = {'price': price, 'pool': pool}
-        # Add the inverse price to the graph in the correct direction
-        graph.setdefault(token1_ticker, {})[token0_ticker] = {'price': 1 / price, 'pool': pool}
+        graph[token0_ticker][token1_ticker] = {
+            'price': price_token0_to_token1,
+            'pool_address': token1_address
+        }
+        graph[token1_ticker][token0_ticker] = {
+            'price': price_token1_to_token0,
+            'pool_address': token0_address
+        }
+    return graph
 
-    # Find cycles of length 3 (triangle arbitrage)
+# find triangle arbitrage
+def find_triangle_arbitrage_opportunities(graph):
+    # Helper function to perform DFS and find cycles of length three
+    def dfs(start_token, current_token, visited, path, depth):
+        # Debugging: print the current path and depth
+        print(f"Visiting: {current_token}, Path: {path}, Depth: {depth}")
+
+        if depth == 3:
+            # Check if there's a direct path back to the start_token
+            if start_token in graph[current_token]:
+                # Complete the cycle if it's a valid triangle
+                path.append(start_token)
+                print(f"Found cycle: {path}")  # Debugging: print the found cycle
+                yield path
+            return
+
+        visited.add(current_token)
+        for next_token in graph[current_token]:
+            if next_token not in visited:
+                yield from dfs(start_token, next_token, visited, path + [next_token], depth + 1)
+        visited.remove(current_token)
+
+    # Iterate over each token and perform DFS to find arbitrage opportunities
     for start_token in graph:
-        for second_token in graph[start_token]:
-            if start_token != second_token:  # Avoid self-loops
-                for third_token in graph[second_token]:
-                    if third_token != second_token and third_token != start_token:  # Avoid revisiting nodes
-                        if start_token in graph[third_token]:  # Ensure the cycle is complete
-                            # Calculate the product of the exchange rates
-                            rate_product = (
-                                graph[start_token][second_token]['price'] *
-                                graph[second_token][third_token]['price'] *
-                                graph[third_token][start_token]['price']
-                            )
-                            # If the product of rates is greater than 1, there is an arbitrage opportunity
-                            if rate_product > 1:  # Using a threshold to account for fees and slippage
-                                print(f"Triangle arbitrage opportunity: {start_token} -> {second_token} -> {third_token} -> {start_token}")
-                                print(f"Rates: {graph[start_token][second_token]['price']}, {graph[second_token][third_token]['price']}, {graph[third_token][start_token]['price']}")
-                                print(f"Product of rates: {rate_product}")
-                                print(f"Pool Addresses: {graph[start_token][second_token]['pool'][3]}, {graph[second_token][third_token]['pool'][3]}, {graph[third_token][start_token]['pool'][3]}")
-                                print("-" * 40)
+        found_opportunity = False
+        for cycle in dfs(start_token, start_token, set(), [], 0):
+            # Calculate the product of exchange rates along the cycle
+            rate_product = 1
+            for i in range(len(cycle) - 1):
+                rate_product *= graph[cycle[i]][cycle[i + 1]]['price']
 
-# Call the function with the pool data
-find_triangle_arbitrage_opportunities(pool_data)
+            if rate_product > 1:
+                # Arbitrage opportunity found
+                print(f"Arbitrage opportunity: {' -> '.join(cycle)}")
+                print(f"Product of rates: {rate_product}")
+                print(f"Pool Addresses: {[graph[cycle[i]][cycle[i + 1]]['pool'][3] for i in range(len(cycle) - 1)]}")
+                print("-" * 40)
+                found_opportunity = True
+
+        if not found_opportunity:
+            print(f"No arbitrage opportunity found for {start_token}.")
+
+# READY, AIM, FIRE! 🏴‍☠️
+arbitrage_graph = build_arbitrage_graph(pool_data)
+# print(arbitrage_graph)
+find_triangle_arbitrage_opportunities(arbitrage_graph)

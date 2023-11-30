@@ -46,7 +46,9 @@ def get_token_decimals(token_address):
         "type": "function",
     }
     token_contract = web3.eth.contract(address=Web3.to_checksum_address(token_address), abi=[decimals_abi])
-    return token_contract.functions.decimals().call()
+    decimals = token_contract.functions.decimals().call()
+    print(f"Token at address {token_address} has {decimals} decimals")  # Debugging output
+    return decimals
 
 # find arbitrage between two pools
 def find_triangle_arbitrage_opportunities(pool_data):
@@ -71,6 +73,9 @@ def find_triangle_arbitrage_opportunities(pool_data):
         token1_decimals = token_decimals[token1_address]
         price = calculate_price_with_decimals(sqrt_price_x96, token0_decimals, token1_decimals)
 
+        # Debug: Print the price and decimals for each pool
+        print(f"Pool: {token0_ticker}-{token1_ticker}, Price: {price}, Decimals: {token0_decimals}, {token1_decimals}")
+
         if token0_ticker not in graph:
             graph[token0_ticker] = {}
         if token1_ticker not in graph:
@@ -93,7 +98,7 @@ def find_triangle_arbitrage_opportunities(pool_data):
                         graph[third_token][start_token]['price']
                     )
                     # If the product of rates is close to 1, there might be an arbitrage opportunity
-                    if 1 < rate_product < 1.01:  # Using a threshold to account for fees and slippage
+                    if 1 < rate_product:  # Using a threshold to account for fees and slippage
                         print(f"Triangle arbitrage opportunity: {start_token} -> {second_token} -> {third_token} -> {start_token}")
                         print(f"Rates: {graph[start_token][second_token]['price']}, {graph[second_token][third_token]['price']}, {graph[third_token][start_token]['price']}")
                         print(f"Product of rates: {rate_product}")

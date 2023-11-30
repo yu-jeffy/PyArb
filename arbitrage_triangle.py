@@ -32,7 +32,7 @@ def calculate_price_with_decimals(sqrt_price_x96, token0_address, token1_address
 def build_arbitrage_graph(pool_data):
     graph = {}
     for pool in pool_data:
-        token0, token1, _, _, _, sqrt_price_x96, token0_address, token1_address, _, _, _ = pool
+        token0, token1, _, _, _, sqrt_price_x96, token0_address, token1_address, _, _ = pool
         token0_ticker, _ = token0
         token1_ticker, _ = token1
 

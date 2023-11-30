@@ -30,7 +30,7 @@ def find_simple_arbitrage_opportunities(pool_data):
     pool_addresses = {}
 
     for pool in pool_data:
-        token0, token1, _, pool_address, _, sqrt_price_x96, token0_address, token1_address, _, _, _ = pool
+        token0, token1, _, pool_address, _, sqrt_price_x96, token0_address, token1_address, _, _ = pool
         # Use the updated price calculation function with decimals
         price = calculate_price_with_decimals(sqrt_price_x96, token0_address, token1_address)
         token_pair = (token0[0], token1[0])

@@ -73,39 +73,9 @@ def get_additional_pool_data(pool_address, pool_abi):
         # Get tick spacing
         tick_spacing = pool_contract.functions.tickSpacing().call()
         
-        # Get historical data (observe function) for specified time intervals
-        periods = [
-            (5, 0),          # Last 5 seconds
-            (30, 0),         # Last 30 seconds
-            (60, 0),         # Last 1 minute
-            (90, 0),         # Last 1 minute 30 seconds
-            (120, 0),        # Last 2 minutes
-            (180, 0),        # Last 3 minutes
-            (240, 0),        # Last 4 minutes
-            (300, 0),        # Last 5 minutes
-            (600, 0),        # Last 10 minutes
-            (900, 0),        # Last 15 minutes
-            (1800, 0),       # Last 30 minutes
-            (3600, 0)        # Last 1 hour
-        ]
-
-        historical_data = []
-        try:
-            for period in periods:
-                # Call `observe` with the start and end of the period
-                tick_cumulatives, seconds_per_liquidity_cumulative_x128s = pool_contract.functions.observe(period).call()
-                
-                # Calculate the time-weighted average tick from the cumulative values
-                time_weighted_average_tick = (tick_cumulatives[1] - tick_cumulatives[0]) / (period[0])
-                
-                # Append the time-weighted average tick to the historical data list
-                historical_data.append(time_weighted_average_tick)
-        except Exception as e:
-            print(f"An error occurred while fetching historical data for pool {pool_address}: {e}")
-            historical_data = None
-
+        
         # Append all the data into a tuple
-        pool_data = (sqrt_price_x96, token0_address, token1_address, fee, tick_spacing, historical_data)
+        pool_data = (sqrt_price_x96, token0_address, token1_address, fee, tick_spacing)
         return pool_data
     except Exception as e:
         print(f"An error occurred while fetching data for pool {pool_address}: {e}")
@@ -134,5 +104,4 @@ for data in pool_data:
     print(f"Token 1 Address (from pool): {data[7]}")
     print(f"Pool Fee: {data[8]}")
     print(f"Tick Spacing: {data[9]}")
-    print(f"Historical Data: {data[10]}")
     print("-" * 40)  # Line break for readability

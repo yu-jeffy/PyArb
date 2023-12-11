@@ -38,4 +38,6 @@ for coin, address in coins.items():
     coins_decimals[address] = decimals
     # print(f"{coin} ({address}) has {decimals} decimals")
 
-# print(coins_decimals)
+print("Coin decimal points:")
+print(coins_decimals)
+print()

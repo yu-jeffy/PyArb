@@ -223,4 +223,68 @@ def calculate_arbitrage_opportunities(pair_prices, gas_fee_wei, slippage_toleran
             print(f"No arbitrage opportunity for {trade_key} after fees, slippage, and gas costs.")
             print()
 
+# find simple arb opportunities
 calculate_arbitrage_opportunities(pair_prices, gas_fee, slippage_tolerance, coins_decimals)
+
+def rerun():
+    rerun_ask = input("Rerun? (y/n): ")
+    if rerun_ask == "y":
+        rerun_ask = True
+    elif rerun_ask == "n":
+        exit()
+    else:
+        print("Invalid input")
+        exit()
+    if rerun:
+        gas_fee = web3.eth.generate_gas_price()
+        print("Rerunning...")
+        print("Fast gas price:")
+        print(gas_fee)
+        print("Trade amount:")
+        print(trade_size)
+        print("Slippage tolerance:")
+        print(slippage_tolerance)
+        valid_pools_with_prices = get_pool_price_all(pools_valid)
+
+        pair_prices = {}
+
+        # Iterate over all pools in the data
+        for data in valid_pools_with_prices:
+            token0 = data[0]
+            token1 = data[1]
+            fee = data[2]
+            pool_address = data[3]
+            liquidity = data[4]
+            sqrtpricex96 = data[5]
+
+            # Calculate the price for both directions
+            price_t0_t1 = calculate_price(sqrtpricex96, coins_decimals[token0[1]], coins_decimals[token1[1]])
+            price_t1_t0 = 1 / price_t0_t1
+
+            # Define the dictionary key as 'TOKEN0_TICKER_to_TOKEN1_TICKER'
+            key_t0_t1 = f"{token0[0].upper()}_TO_{token1[0].upper()}"
+            key_t1_t0 = f"{token1[0].upper()}_TO_{token0[0].upper()}"
+
+            # Initialize with empty list if key doesn't exist
+            if key_t0_t1 not in pair_prices:
+                pair_prices[key_t0_t1] = []
+            if key_t1_t0 not in pair_prices:
+                pair_prices[key_t1_t0] = []
+
+            # Append new entry to the list associated with each key (tuple format for immutability)
+            pair_prices[key_t0_t1].append((token0[1], token1[1], pool_address, fee, liquidity, price_t0_t1))
+            pair_prices[key_t1_t0].append((token1[1], token0[1], pool_address, fee, liquidity, price_t1_t0))
+
+        # Print the prices for all pairs and directions
+        for key, entries in pair_prices.items():
+            print()
+            print(f"{key}:")
+            for entry in entries:
+                print(entry)
+            print() 
+        
+        calculate_arbitrage_opportunities(pair_prices, gas_fee, slippage_tolerance, coins_decimals)
+                                          
+        rerun()
+
+rerun()

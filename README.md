@@ -3,8 +3,40 @@
 ## Overview
 This project aims to develop a Python-based arbitrage bot for Uniswap V3. The bot is designed to identify and potentially exploit price discrepancies across different Uniswap V3 pools for the same token pair. The project includes scripts for fetching pool data, calculating prices with proper token decimals, and identifying simple and triangular arbitrage opportunities.
 
-## Project Structure
-The project is divided into several Python files, each serving a specific purpose:
+## Main Module
+`main.py` serves as the primary entry point to the application. It queries on-chain data to extract liquidity and price information of cryptocurrencies, evaluates this data for potential arbitrage opportunities, and allows for reanalysis to determine if conditions have changed to present new opportunities.
+
+![main_demo](pyarb_simple_test.gif)
+
+### Data Transformation and Processing
+
+The process begins by establishing a connection to the Ethereum blockchain using the Web3.py library and sets aggressive gas price strategies for faster transaction confirmation.
+
+It then prompts the user to input the desired trade size in ETH and slippage tolerance percentage. Slippage tolerance defines the maximum price movement a user is willing to accept between the transaction's signing and its execution on the blockchain.
+
+Liquidity and price data are retrieved from Uniswap V3 pool contracts using specified ABI and pool addresses. `get_pool_liquidity_all()` gathers liquidity for each pool address, while `get_pool_price_all()` fetches the corresponding `sqrtPriceX96` value, a representation of the price used by Uniswap V3.
+
+Both the liquidity and price data undergo filtering based on the minimum liquidity cutoff determined by the given trade size and the user's slippage tolerance. Pools that do not satisfy this criterion are disregarded.
+
+The `calculate_price()` function converts the `sqrtPriceX96` value into human-readable prices for each token pair, adjusting for differences in the token decimals.
+
+### Each One-Way Trades Formatted as Dictionary
+
+Once the data is assembled, the file generates a dictionary named `pair_prices` keyed by `TICKER_A_TO_TICKER_B` strings, with each entry containing a list of tuples. Each tuple includes token addresses, the pool address, fee, liquidity, and the computed price for trading between the specified tokens.
+
+### Profitability Calculation
+
+Using the `pair_prices` dictionary data, the application computes arbitrage opportunities for the filtered pool pairs. An arbitrage opportunity exists if an asset can be bought in one market (pool) at a lower price and sold in another at a higher price, after accounting for transaction fees, slippage, and gas costs.
+
+The `calculate_arbitrage_opportunities()` function calculates the scaled buy and sell prices for each token pair across different pools. It factors in transaction/slippage costs and uses gas fees (in Wei, converted to ETH) to evaluate potential profitability of a trade.
+
+### Re-run Capabilities
+
+The script provides an option for the user to re-run the data retrieval and evaluation process without restarting the program, simply by inputting "y" when prompted by the `rerun()` function. The pool addresses, coin addresses, and coin decimal points are already initiated and retained from the first run. The user inputted trade amount and slippage tolerance are also kept. It fetches a new gas price and runs the smart contract price queries again for new opportunities.
+
+
+## Other Modules
+The project is divided into several Python modules, each serving a specific purpose:
 
 - `coins.py`: Contains a dictionary mapping token tickers to their respective Ethereum contract addresses.
 - `decimals.py`: Fetches and stores the number of decimals for each token using the Web3 library and the ERC-20 `decimals` ABI.

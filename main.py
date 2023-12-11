@@ -32,8 +32,13 @@ web3.middleware_onion.add(middleware.time_based_cache_middleware)
 web3.middleware_onion.add(middleware.latest_block_based_cache_middleware)
 web3.middleware_onion.add(middleware.simple_cache_middleware)
 
-# print("fast gas price:")
-# print(web3.eth.generate_gas_price())
+# get and set gas price
+gas_fee = web3.eth.generate_gas_price()
+print("fast gas price:")
+print(gas_fee)
+
+# slippage tolerance
+slippage_tolerance = Decimal(input("Enter slippage tolerance (ex. 0.005 = 0.5%): "))
 
 # Load the Uniswap V3 Pool contract ABI from the external JSON file
 with open('uniswap_pool_abi.json', 'r') as abi_file:
@@ -167,14 +172,6 @@ for key, entries in pair_prices.items():
         print(entry)
     print() 
 
-
-# get and set gas price
-gas_fee = web3.eth.generate_gas_price()
-print("fast gas price:")
-print(gas_fee)
-
-# slippage tolerance
-slippage_tolerance = Decimal(input("Enter slippage tolerance (ex. 0.005 = 0.5%): "))
 
 # Checking for arbitrage opportunities within the pair_prices
 def calculate_arbitrage_opportunities(pair_prices, gas_fee_wei, slippage_tolerance, coins_decimals):

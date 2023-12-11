@@ -198,10 +198,10 @@ def calculate_arbitrage_opportunities(pair_prices, gas_fee_wei, slippage_toleran
         best_sell_pool = sorted_pools_sell[0]
 
         # Calculate the scaled prices using the decimals
-        price_buy_scaled = ((Decimal(best_buy_pool[5]) / Decimal(2**96))**2 * (1 + slippage_tolerance) *
-                            (1 - best_buy_pool[3] / 1e6) * Decimal(10)**(coins_decimals[best_buy_pool[1]] - coins_decimals[best_buy_pool[0]]))
-        price_sell_scaled = ((Decimal(best_sell_pool[5]) / Decimal(2**96))**2 * (1 - slippage_tolerance) *
-                             (1 - best_sell_pool[3] / 1e6) * Decimal(10)**(coins_decimals[best_sell_pool[1]] - coins_decimals[best_sell_pool[0]]))
+        price_buy_scaled = ((Decimal(best_buy_pool[5]) / Decimal(2**96))**2 * Decimal(1 + slippage_tolerance) *
+                            Decimal(1 - best_buy_pool[3] / 1e6) * Decimal(10)**(coins_decimals[best_buy_pool[1]] - Decimal(coins_decimals[best_buy_pool[0]])))
+        price_sell_scaled = ((Decimal(best_sell_pool[5]) / Decimal(2**96))**2 * Decimal(1 - slippage_tolerance) *
+                             Decimal(1 - best_sell_pool[3] / 1e6) * Decimal(10)**(coins_decimals[best_sell_pool[1]] - Decimal(coins_decimals[best_sell_pool[0]])))
 
         # Gas fee in ETH
         gas_fee_eth = Decimal(gas_fee_wei) / Decimal(10**18)

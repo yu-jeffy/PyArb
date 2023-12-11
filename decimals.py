@@ -10,8 +10,8 @@ load_dotenv()
 web3 = Web3(Web3.HTTPProvider(os.getenv('WEB3_PROVIDER_URL')))
 
 # Check if connected to Web3
-if web3.is_connected():
-    print("We are connected to Web3!")
+# if web3.is_connected():
+    # print("We are connected to Web3!")
 
 def get_token_decimals(token_address):
     # ERC-20 token standard 'decimals' function ABI

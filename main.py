@@ -37,6 +37,9 @@ gas_fee = web3.eth.generate_gas_price()
 print("fast gas price:")
 print(gas_fee)
 
+# trade size
+trade_size = Decimal(input("Enter trade size in ETH (ex. 0.1): "))
+
 # slippage tolerance
 slippage_tolerance = Decimal(input("Enter slippage tolerance (ex. 0.005 = 0.5%): "))
 
@@ -76,10 +79,16 @@ def get_pool_liquidity_all(pool_addresses):
 # Get the array of pool information with liquidity
 pool_liquidities = get_pool_liquidity_all(pool_addresses)
 
-# Filter out pools with zero liquidity and create a new list.
+# Calculate the minimum liquidity requirement based on trade size and slippage
+min_liquidity_cutoff = (trade_size / slippage_tolerance).quantize(Decimal('1.'))
+
+# Filter out pools with less than minimum liquidity cutoff and create a new list.
+# set to 0 to only filter out empty pools
 # pools_valid is a list of tuples with the following structure:
 # (token_0, token_1, fee, pool_address, liquidity)
-pools_valid = [pool_info for pool_info in pool_liquidities if pool_info[4] > 0]
+pools_valid = [pool_info for pool_info in pool_liquidities if pool_info[4] > min_liquidity_cutoff]
+
+
 
 # Function to query price, sqrtpricex96, from a pool contract
 def get_pool_price(pool_address):
@@ -209,7 +218,9 @@ def calculate_arbitrage_opportunities(pair_prices, gas_fee_wei, slippage_toleran
             print(f"Buy from pool {best_buy_pool[2]} at price {price_buy_scaled} ETH")
             print(f"Sell at pool {best_sell_pool[2]} at price {price_sell_scaled} ETH")
             print("Potential profit per token minus gas costs (in ETH):", price_sell_scaled - price_buy_scaled - gas_fee_eth)
+            print()
         else:
             print(f"No arbitrage opportunity for {trade_key} after fees, slippage, and gas costs.")
+            print()
 
 calculate_arbitrage_opportunities(pair_prices, gas_fee, slippage_tolerance, coins_decimals)

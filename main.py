@@ -129,13 +129,16 @@ def calculate_price(sqrt_price_x96, decimals0, decimals1):
     return price_token0_token1 * price_adjustment_factor
 
 # Empty dictionary to hold converted rates
+# data is TICKER_TO_TICKER : (token_0, token_1, pool_address, fee, liquidity, sqrtpricex96)
 pair_prices = {}
 
 # Iterate over all pools in the data
 for data in valid_pools_with_prices:
     token0 = data[0]
     token1 = data[1]
+    fee = data[2]
     pool_address = data[3]
+    liquidity = data[4]
     sqrtpricex96 = data[5]
 
     # Calculate the price for both directions
@@ -153,8 +156,8 @@ for data in valid_pools_with_prices:
         pair_prices[key_t1_t0] = []
 
     # Append new entry to the list associated with each key (tuple format for immutability)
-    pair_prices[key_t0_t1].append((token0[1], token1[1], pool_address, price_t0_t1))
-    pair_prices[key_t1_t0].append((token1[1], token0[1], pool_address, price_t1_t0))
+    pair_prices[key_t0_t1].append((token0[1], token1[1], pool_address, fee, liquidity, price_t0_t1))
+    pair_prices[key_t1_t0].append((token1[1], token0[1], pool_address, fee, liquidity, price_t1_t0))
 
 # Print the prices for all pairs and directions
 for key, entries in pair_prices.items():
@@ -165,6 +168,51 @@ for key, entries in pair_prices.items():
     print() 
 
 
-# print("fast gas price:")
-# print(web3.eth.generate_gas_price())
+# get and set gas price
+gas_fee = web3.eth.generate_gas_price()
+print("fast gas price:")
+print(gas_fee)
 
+# slippage tolerance
+slippage_tolerance = Decimal(input("Enter slippage tolerance (ex. 0.005 = 0.5%): "))
+
+# Checking for arbitrage opportunities within the pair_prices
+def calculate_arbitrage_opportunities(pair_prices, gas_fee_wei, slippage_tolerance, coins_decimals):
+    # Iterate over the trading pairs in the pair_prices dictionary
+    for trade_key, pool_entries in pair_prices.items():
+        # Sort the entries by the effective buy price (ascending)
+        # Considering the fees and slippage for buying
+        sorted_pools_buy = sorted(
+            pool_entries,
+            key=lambda entry: (Decimal(entry[5]) / Decimal(2**96))**2 * (1 + slippage_tolerance) * Decimal(1 - entry[3] / 1e6)
+        )
+        # Sort the entries by the effective sell price (descending)
+        # Considering the fees and slippage for selling
+        sorted_pools_sell = sorted(
+            pool_entries,
+            key=lambda entry: (Decimal(entry[5]) / Decimal(2**96))**2 * (1 - slippage_tolerance) * Decimal(1 - entry[3] / 1e6),
+            reverse=True
+        )
+        # We take the pool with the lowest effective price for buying and the highest effective price for selling
+        best_buy_pool = sorted_pools_buy[0]
+        best_sell_pool = sorted_pools_sell[0]
+
+        # Calculate the scaled prices using the decimals
+        price_buy_scaled = ((Decimal(best_buy_pool[5]) / Decimal(2**96))**2 * (1 + slippage_tolerance) *
+                            (1 - best_buy_pool[3] / 1e6) * Decimal(10)**(coins_decimals[best_buy_pool[1]] - coins_decimals[best_buy_pool[0]]))
+        price_sell_scaled = ((Decimal(best_sell_pool[5]) / Decimal(2**96))**2 * (1 - slippage_tolerance) *
+                             (1 - best_sell_pool[3] / 1e6) * Decimal(10)**(coins_decimals[best_sell_pool[1]] - coins_decimals[best_sell_pool[0]]))
+
+        # Gas fee in ETH
+        gas_fee_eth = Decimal(gas_fee_wei) / Decimal(10**18)
+
+        # Check for arbitrage opportunity
+        if price_sell_scaled > price_buy_scaled + gas_fee_eth:
+            print(f"Arbitrage opportunity found for {trade_key}!")
+            print(f"Buy from pool {best_buy_pool[2]} at price {price_buy_scaled} ETH")
+            print(f"Sell at pool {best_sell_pool[2]} at price {price_sell_scaled} ETH")
+            print("Potential profit per token minus gas costs (in ETH):", price_sell_scaled - price_buy_scaled - gas_fee_eth)
+        else:
+            print(f"No arbitrage opportunity for {trade_key} after fees, slippage, and gas costs.")
+
+calculate_arbitrage_opportunities(pair_prices, gas_fee, slippage_tolerance, coins_decimals)

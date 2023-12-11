@@ -1,0 +1,17 @@
+Taking ETH-USDT as an example, we know that the price on uniswap V3 is represented by tick, that is, 𝑝(𝑖) = 1.0001^𝑖, 𝑖 is the tick order, firstly we set all liquidity of the ETH-USDT pool as segments. Suppose it is divided into n segments, then the liquidity in each tick space included in the n segment is the same. We mark it as L1, L2…Ln, and the price range of each segment is [Pan, Pbn], the current price is P0, we need to calculate how much you can swap u0 usdt for ETH. As we all know, the amount of USDT and Ep in the current segment as
+Up = L(sqrt(P0) - sqrt(Pan))
+Ep = L((1/sqrt(P0)) - (1/sqrt(Pbn)))
+Obviously at the endpoints of the current segment Pan and Pbn will have Epn ETH and Upn USDT
+Epn = L((1/sqrt(Pan)) - (1/sqrt(Pbn)))
+Up = L(sqrt(Pbn) - sqrt(Pan))
+When u0+up<=up, the swap would be completed in the current segment, and at this time:
+u0 + up = L(sqrt(Px) - sqrt(Pan))
+Epx = L(1/sqrt(Px) - 1/sqrt(Pbn))
+Wherein px is the final price of pool after swap,
+According to (1) to (6), it can be calculated as followed:
+Epx = L( (L/u0 + L*sqrt(P0)) - ( 1 / sqrt(Pbn)) )
+Then the swap price Pswap
+Pswap = u0 / (Ep - Epx) = u0 / ( L(( 1 / sqrt(P0)) - ( L / u0 + L*sqrt(P0)))
+Then we can get the slippage (%)
+slippage(%) = (Pswap / P0) -1 = (u0 / L( (1/sqrtP0) - ( L / (u0 + L*sqrt(P0)))) -1
+When u0+up>up, that is, when tick-cross occurs, it is only necessary to repeat the calculation for the remaining part after the swap in the current segment in the next segment, and the final slippage can be calculated.
